@@ -1,0 +1,218 @@
+// AI Prompt Builder — Prisma schema
+// PostgreSQL data model for users, projects, questionnaire sessions,
+// prompts (with immutable versions), templates, and preferences.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Enums
+// ---------------------------------------------------------------------------
+
+enum PromptType {
+  GENERAL
+  CODING
+  WRITING
+  MARKETING
+  IMAGE
+  ANALYSIS
+}
+
+enum SessionStatus {
+  IN_PROGRESS
+  COMPLETED
+  ABANDONED
+}
+
+enum TemplateVisibility {
+  PUBLIC
+  PRIVATE
+}
+
+// ---------------------------------------------------------------------------
+// User & auth
+// ---------------------------------------------------------------------------
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  projects      Project[]
+  prompts       Prompt[]
+  sessions      PromptSession[]
+  templates     Template[]
+  preferences   UserPreferences?
+  refreshTokens RefreshToken[]
+
+  @@index([email])
+}
+
+model RefreshToken {
+  id        String   @id @default(cuid())
+  userId    String
+  tokenHash String   @unique
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime @default(now())
+  userAgent String?
+  ip        String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model UserPreferences {
+  id                  String   @id @default(cuid())
+  userId              String   @unique
+  defaultPromptType   PromptType @default(GENERAL)
+  defaultTone         String?
+  defaultAudience     String?
+  preferLongPrompts   Boolean  @default(false)
+  theme               String   @default("system") // "light" | "dark" | "system"
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ---------------------------------------------------------------------------
+// Projects — top-level container for a user's prompts
+// ---------------------------------------------------------------------------
+
+model Project {
+  id          String   @id @default(cuid())
+  userId      String
+  name        String
+  description String?
+  color       String?  // hex color for UI
+  archived    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user     User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  prompts  Prompt[]
+  sessions PromptSession[]
+
+  @@index([userId])
+  @@index([userId, archived])
+}
+
+// ---------------------------------------------------------------------------
+// PromptSession — one run of the adaptive questionnaire
+// Stores the answers; emits a Prompt when completed.
+// ---------------------------------------------------------------------------
+
+model PromptSession {
+  id           String        @id @default(cuid())
+  userId       String
+  projectId    String?
+  promptType   PromptType
+  status       SessionStatus @default(IN_PROGRESS)
+
+  // The questionnaire answers as JSON: { [questionId]: value }
+  answers      Json          @default("{}")
+
+  // Tracks which step of the wizard the user is on
+  currentStep  Int           @default(0)
+
+  // Set when the session produces a prompt
+  resultPromptId String?     @unique
+
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  completedAt  DateTime?
+
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project      Project?      @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  resultPrompt Prompt?       @relation("SessionResult", fields: [resultPromptId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([projectId])
+  @@index([status])
+}
+
+// ---------------------------------------------------------------------------
+// Prompt — a generated prompt (head row). Versions are immutable rows.
+// ---------------------------------------------------------------------------
+
+model Prompt {
+  id          String   @id @default(cuid())
+  userId      String
+  projectId   String?
+  title       String
+  promptType  PromptType
+  // The currently active version's text — denormalized for cheap reads
+  currentText String   @db.Text
+  // Cached score for the active version
+  score       Int?
+  pinned      Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user     User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project  Project?         @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  versions PromptVersion[]
+  session  PromptSession?   @relation("SessionResult")
+
+  @@index([userId])
+  @@index([projectId])
+  @@index([userId, createdAt])
+}
+
+model PromptVersion {
+  id         String   @id @default(cuid())
+  promptId   String
+  version    Int      // monotonically increasing per prompt, starts at 1
+  text       String   @db.Text
+  // The full score breakdown produced by the scoring service
+  scoreTotal Int
+  scoreData  Json     // { clarity, specificity, context, structure, constraints }
+  // The answers snapshot that produced this version (if any)
+  answers    Json?
+  notes      String?
+  createdAt  DateTime @default(now())
+
+  prompt Prompt @relation(fields: [promptId], references: [id], onDelete: Cascade)
+
+  @@unique([promptId, version])
+  @@index([promptId])
+}
+
+// ---------------------------------------------------------------------------
+// Template — reusable starting points. System templates have userId = null.
+// ---------------------------------------------------------------------------
+
+model Template {
+  id          String             @id @default(cuid())
+  userId      String?            // null = system template (seeded)
+  name        String
+  description String
+  promptType  PromptType
+  // Pre-filled answers compatible with the questionnaire schema
+  answers     Json               @default("{}")
+  // Optional fully-rendered example prompt
+  exampleText String?            @db.Text
+  tags        String[]           @default([])
+  visibility  TemplateVisibility @default(PUBLIC)
+  usageCount  Int                @default(0)
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+
+  user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([promptType])
+  @@index([visibility])
+  @@index([userId])
+}
