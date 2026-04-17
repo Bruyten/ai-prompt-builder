@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ViralShift AI - Short-Form Video Automation Engine</title>
+  <link rel="stylesheet" href="style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Header -->
+    <header class="header">
+      <div class="logo">
+        <span class="logo-icon">V</span>
+        <span class="logo-text">ViralShift AI</span>
+      </div>
+      <div class="backend-status">
+        <label class="toggle">
+          <input type="checkbox" id="useBackend" checked>
+          <span class="toggle-slider"></span>
+        </label>
+        <span class="status-text" id="backendStatus">Backend Connected (localhost:3001)</span>
+      </div>
+      <p class="tagline">Short-Form Video Automation Engine + Real Backend</p>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <!-- Left Panel - Input Form -->
+      <div class="panel input-panel">
+        <h2 class="panel-title">Product Input</h2>
+        
+        <form id="productForm" class="form">
+          <div class="form-group">
+            <label for="productName">Product Name</label>
+            <input type="text" id="productName" placeholder="e.g., GlowSkin Serum" required>
+          </div>
+
+          <div class="form-group">
+            <label for="productDescription">Product Description</label>
+            <textarea id="productDescription" rows="3" placeholder="Describe your product..." required></textarea>
+          </div>
+
+          <div class="form-group">
+            <label for="targetAudience">Target Audience</label>
+            <input type="text" id="targetAudience" placeholder="e.g., Women 25-45 with skincare concerns">
+          </div>
+
+          <div class="form-group">
+            <label for="keyBenefits">Key Benefits (comma separated)</label>
+            <input type="text" id="keyBenefits" placeholder="e.g., Reduces wrinkles, Hydrates skin, Natural ingredients">
+          </div>
+
+          <div class="form-group">
+            <label for="painPoints">Pain Points (comma separated)</label>
+            <input type="text" id="painPoints" placeholder="e.g., Dry skin, Aging signs, Expensive treatments">
+          </div>
+
+          <div class="form-group">
+            <label for="offerType">Offer Type</label>
+            <input type="text" id="offerType" placeholder="e.g., 50% off, Free shipping, Buy 2 Get 1">
+          </div>
+
+          <div class="form-group">
+            <label for="callToAction">Call To Action</label>
+            <input type="text" id="callToAction" placeholder="e.g., Shop now, Get yours today">
+          </div>
+
+          <div class="form-group">
+            <label for="productImages">Product Image URLs (comma separated)</label>
+            <input type="text" id="productImages" placeholder="https://example.com/image1.jpg, https://...">
+          </div>
+
+          <button type="submit" class="btn-generate" id="generateBtn">
+            <span class="btn-icon">&#9889;</span>
+            Generate Content
+          </button>
+        </form>
+
+        <!-- Quick Templates -->
+        <div class="templates">
+          <p class="templates-label">Quick Templates:</p>
+          <div class="template-buttons">
+            <button class="btn-template" data-template="skincare">Skincare</button>
+            <button class="btn-template" data-template="fitness">Fitness</button>
+            <button class="btn-template" data-template="digital">Digital Product</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Panel - Output -->
+      <div class="panel output-panel">
+        <h2 class="panel-title">Generated Content</h2>
+        
+        <!-- Tabs -->
+        <div class="tabs" id="tabs">
+          <button class="tab active" data-tab="concepts">Concepts</button>
+          <button class="tab" data-tab="scripts">Scripts</button>
+          <button class="tab" data-tab="visuals">Visuals</button>
+          <button class="tab" data-tab="prompts">AI Prompts</button>
+          <button class="tab" data-tab="editing">Editing</button>
+          <button class="tab" data-tab="hooks">Hooks</button>
+          <button class="tab" data-tab="captions">Captions</button>
+          <button class="tab" data-tab="funnel">Funnel</button>
+          <button class="tab" data-tab="json">JSON</button>
+          <button class="tab" data-tab="workflow">Workflow</button>
+        </div>
+
+        <!-- Tab Content -->
+        <div class="tab-content" id="tabContent">
+          <div class="placeholder" id="placeholder">
+            <div class="placeholder-icon">&#127916;</div>
+            <p>Fill in your product details and click "Generate Content" to create your viral video automation package.</p>
+          </div>
+          <div class="content-area" id="contentArea" style="display: none;"></div>
+        </div>
+
+        <!-- Copy Button -->
+        <button class="btn-copy" id="copyBtn" style="display: none;">
+          <span>&#128203;</span> Copy Section
+        </button>
+      </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <p>ViralShift AI — Full Automation Backend Included • Run <code style="background:#1f2937;padding:2px 6px;border-radius:4px;font-size:0.8rem;">node server.js</code> for real backend API</p>
+      <p style="font-size:0.75rem;opacity:0.6;margin-top:8px;">Frontend calls http://localhost:3001/api/generate | Falls back to local JS if backend unavailable</p>
+    </footer>
+  </div>
+
+  <script src="script.js" defer></script>
+</body>
+</html>
